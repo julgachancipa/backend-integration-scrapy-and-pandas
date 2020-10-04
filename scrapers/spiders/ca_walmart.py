@@ -6,18 +6,50 @@ from scrapers.items import ProductItem
 
 
 class CaWalmartSpider(scrapy.Spider):
+    """
+    The CaWalmartSpider extracts the information from the Walmart Canada
+    fruit Category depending on the location of the store that is chosen
+    """
     name = "ca_walmart"
     allowed_domains = ["walmart.ca"]
     start_urls = ["https://www.walmart.ca/en/grocery/fruits-vegetables/fruits/N-3852"]
+    page_num = 2
+    max_page = 2
+    branches = [
+        {
+            'city': 'Thunder Bay',
+            'id': 3124,
+            'latitude': '48.412997',
+            'longitude': '-89.239717'
+        },
+        {
+            'city': 'Toronto',
+            'id': 3106,
+            'latitude': '43.656422',
+            'longitude': '-79.435567'}
+    ]
 
     def parse(self, response):
+        """
+        It takes the response from the start urls, looks for the
+        url of each product and also take care of the pagination
+        """
         products_urls = response.css('.product-link::attr(href)').extract()
 
         for product_url in products_urls:
             yield response.follow(product_url, callback=self.parse_product,
                                   cb_kwargs={'url': product_url})
 
+        next_pag = 'https://www.walmart.ca/en/grocery/fruits-vegetables/fruits/N-3852/page-'\
+                   + str(self.page_num)
+        if self.page_num <= self.max_page:
+            yield response.follow(next_pag, callback=self.parse)
+
     def parse_product(self, response, url):
+        """
+        It searches for the information we need to extract from
+        each product to finally verify its availability in each store
+        """
         preloaded_state = re.findall(r'(\{.*\})', response.xpath('/html/body/script[1]').extract()[0])
         preloaded_state = json.loads(preloaded_state[0])
 
@@ -41,21 +73,7 @@ class CaWalmartSpider(scrapy.Spider):
         categories.reverse()
         item['category'] = '>'.join(categories)
 
-        branches = [
-            {
-                'city': 'Thunder Bay',
-                'id': 3124,
-                'latitude': '48.412997',
-                'longitude': '-89.239717'
-            },
-            {
-                'city': 'Toronto',
-                'id': 3106,
-                'latitude': '43.656422',
-                'longitude': '-79.435567'}
-        ]
-
-        for branch in branches:
+        for branch in self.branches:
             branch_url = 'https://www.walmart.ca/api/product-page/find-in-store' \
                          '?latitude={}&longitude={}&lang=en&upc={}'\
                 .format(branch['latitude'], branch['longitude'], item_skus['upc'][0])
@@ -64,6 +82,11 @@ class CaWalmartSpider(scrapy.Spider):
                                   cb_kwargs={'item': item, 'branch': branch['id']})
 
     def parse_branch(self, response, item, branch):
+        """
+        It checks the availability and price of the product in the store
+        :param item: product item
+        :param branch: store id
+        """
         stock = 0
         price = 0
 
