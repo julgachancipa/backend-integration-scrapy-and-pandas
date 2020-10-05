@@ -14,6 +14,10 @@ BRANCHES = ['MM', 'RHSM']
 
 
 def process_csv_files():
+    """
+    It reads the products and prices stock csv files
+    :return: products_df, prices_stock_df data frames
+    """
     products_df = pd.read_csv(filepath_or_buffer=PRODUCTS_PATH, sep="|",)
     prices_stock_df = pd.read_csv(filepath_or_buffer=PRICES_STOCK_PATH, sep="|",)
 
@@ -21,6 +25,12 @@ def process_csv_files():
 
 
 def select_products_df(products_df):
+    """
+    It selects the desired columns and join
+    the categories in a single column
+    :param products_df: products data frame
+    :return: filtered products data frame
+    """
     full_category = ['CATEGORY', 'SUB_CATEGORY', 'SUB_SUB_CATEGORY']
     products_df['FULL_CATEGORY'] = products_df[full_category]\
         .apply(lambda row: '|'.join(row.values.astype(str)), axis=1)
@@ -31,6 +41,12 @@ def select_products_df(products_df):
 
 
 def select_prices_stock_df(prices_stock_df):
+    """
+    It selects the rows with the desired branches
+    and inventory greater than zero
+    :param prices_stock_df: prices stock data frame
+    :return: filtered prices stock data frame
+    """
     branch_mask = prices_stock_df['BRANCH'].isin(BRANCHES)
     prices_stock_df = prices_stock_df[branch_mask]
 
@@ -41,6 +57,10 @@ def select_prices_stock_df(prices_stock_df):
 
 
 def products_to_db(products):
+    """
+    It saves the products in the database
+    :param products: dictionary with the desired information
+    """
     Session = sessionmaker(bind=engine)
     session = Session()
     Base.metadata.create_all(engine)
