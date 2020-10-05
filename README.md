@@ -5,6 +5,34 @@ The purpose of this repository is collecting product information from external s
 - Case 1: Scraping a product department at Walmart Canada's website
 - Case 2: Processing CSV files to extract clean information
 
+The product information is defined by two models (or tables):
+
+### Product
+The Product model contains basic product information:
+
+*Product*
+
+- Store
+- Barcodes (a list of UPC/EAN barcodes)
+- SKU (the product identifier in the store)
+- Brand
+- Name
+- Description
+- Package
+- Image URL
+- Category
+- URL
+
+### BranchProduct
+The BranchProduct model contains the attributes of a product that are specific for a store's branch. The same product can be available/unavailable or have different prices at different branches.
+
+*BranchProduct*
+
+- Branch
+- Product
+- Stock
+- Price
+
 ## Installation
 I suggest you create a virtual environment:
 ```
